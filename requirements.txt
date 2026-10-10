@@ -1,0 +1,4 @@
+beancount==3.2.0
+fastapi==0.134.0
+pydantic==2.12.5
+uvicorn==0.41.0

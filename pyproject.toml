@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ledger-agent-skills"
+version = "0.2.0"
+description = "Self-contained zledger bookkeeping tools, dashboard, agent role and skills"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = ["beancount==3.2.0", "fastapi==0.134.0", "pydantic==2.12.5", "uvicorn==0.41.0"]
+
+[project.scripts]
+zledger = "zledger.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["zledger*", "app*"]
+
+[tool.setuptools.package-data]
+app = ["static/*.html"]

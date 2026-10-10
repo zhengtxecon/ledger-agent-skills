@@ -1,42 +1,74 @@
 # Ledger Agent Skills
 
-面向 Codex 的个人记账角色与四项操作 skill。**实际查账、记账与报销管理依赖外部记账工具 zledger。** 本仓库提供角色指引和操作流程；交易读写、余额计算、账本校验与数据存储由使用者另行安装的 zledger 及其 finances 项目承担。
+一个可独立安装运行的个人记账项目：**zledger 工具代码、本机看板、泉府掌籍角色与四个 Codex skills 均在本仓库。** 克隆后安装 Python 依赖即可初始化空账本，不依赖作者的私人项目、账本或未发布工具。
 
-此包只发布工作指引与 skill 元数据。**不包含 zledger 工具代码、真实账本、账户定义、财务数据库、私人记录或凭据。** 安装此包本身不能运行账务命令。
+Agent 根据角色和 skill 调用本包提供的 zledger。账务计算与读写由 zledger 完成，底层使用 Beancount 与 SQLite。Python 3.12+ 和公开 Python 包仍是运行依赖；安装时需下载这些依赖。
+
+## 结构
+
+| 目录或文件 | 职责 |
+|---|---|
+| `zledger/` | 查询、收支、转账、换汇、平账、交易 ID、账户配置、报销与看板命令 |
+| `app/` | 本机 FastAPI 服务、报销数据库操作和无需 CDN 的看板页面 |
+| `pyproject.toml` / `requirements.txt` | 安装入口与依赖 |
+| [roles/ROLE.md](roles/ROLE.md) | 泉府掌籍角色与权限 |
+| [skills/](skills/) | 查账、新增、修旧账、报销四项 skill 与展示元数据 |
+| [AGENTS.md](AGENTS.md) | 项目维护规则与工具契约 |
+| [examples/AGENTS.fragment.md](examples/AGENTS.fragment.md) | 将角色和 skills 接入本地 agent 的路由片段 |
+| `tests/` | 临时隔离数据上的工具与安装验证 |
 
 ## 数据与隐私边界
 
-- 本仓库只保存通用指引。不得把真实交易、金额、余额、交易编号、报销 case 编号、商家或交易对方、账户名称、账户别名、账号、凭据及个人路径写入或提交到本仓库。
-- README、角色、skills、示例、日志、截图及测试材料都适用此规则。`account`、`--account TEXT`、`TXID`、`ID` 等内容是命令或占位符，不含真实账户或交易值。
-- 使用时，账户定义和账务数据只从使用者独立配置的 finances 项目及外部工具读取；经授权的账务写入只由 zledger 写到该项目的数据存储中。
-- 不将查询结果、账本导出、收据、数据库副本或包含真实值的调试材料保存到本包或公开仓库。敏感检查材料临时生成后应清理，不作为示例发布。
-- `.gitignore` 排除常见账本、数据库、导出与本地配置目录；它不能防止真实值被写进 Markdown，提交前仍须检查全部拟发布文件及历史。
+本仓库不包含作者的真实交易、金额、余额、账户名称、账户别名、账号、交易对方、交易编号、报销编号、凭据或个人路径。工具中没有内置个人账户清单、卡号尾号、银行图标或个人币种分组。
 
-以上边界针对本包与公开 GitHub 仓库；对话历史及外部工具本身的数据保留由各自环境管理。
+- 实际账户由使用者自行配置，数据存放在本项目之外的私有目录。
+- 默认位置为 Windows `%LOCALAPPDATA%\zledger`；其他系统为 `$XDG_DATA_HOME/zledger` 或 `~/.local/share/zledger`。
+- `FINANCES_REPO` 可指定另一个私有数据目录；`FINANCES_LEDGER_PATH` 可指定其入口账本，并优先于 `FINANCES_REPO`。报销数据库默认位于入口账本旁的 `state/finance-reimbursements.db`。
+- `FINANCES_REIMBURSEMENTS_DB` 可覆盖数据库路径，但必须位于该私有数据目录内。相对路径按私有数据目录解析。
+- 禁止把真实值写入源代码、角色、skills、说明、示例、日志、截图或测试材料，再提交到本仓库。运行日志、数据库和配置写到私有数据目录。
+- `account`、`--account TEXT`、`TXID`、`ID` 是通用命令或占位符。自动化测试中的数据均临时生成，测试结束清理；不读取真实账本。
+- `.gitignore` 排除账本、数据库、导出及本地配置；提交前仍须检查拟发布内容与历史，避免真实值进入 Markdown 或代码。
 
-## 分工
+对话历史由对话环境管理。报销中的跨币种历史汇率查询可访问 Frankfurter，仅发送日期和币种；它不上传账本、账户或交易对方。基础记账、同币种报销和看板不需要该服务。
 
-| 文件 | 职责 |
+## 安装工具并初始化
+
+在克隆后的项目目录运行以下 PowerShell 命令。独立环境的入口不会替换已有的全局 zledger。
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install .
+.\.venv\Scripts\zledger.exe --help
+.\.venv\Scripts\zledger.exe init
+.\.venv\Scripts\zledger.exe balance
+```
+
+初始化只生成空账本、当前年度文件和技术平账账户 `Equity:Adjustments`，不生成个人账户、交易或余额。已有非空目录时拒绝覆盖。
+
+如要指定目录，使用 `init --directory PRIVATE_DIRECTORY`，并在后续会话将 `FINANCES_REPO` 设为同一路径。源代码或安装目录不能用于保存私有账务数据。
+
+账户配置命令是 `zledger account add --name ACCOUNT --currency CURRENCY [--alias ALIAS] [--date DATE]`。`ACCOUNT` 必须是用户自行指定的完整 Beancount 账户名；消费、收入及平账涉及的类别也需要先定义。缺少币种或存在多个币种时，单币种写入拒绝猜测。新增账户属于结构变更，agent 执行前应确认。
+
+年度切换使用 `zledger year --add YEAR` 生成空文件并更新 include；已有年度文件不会被覆盖。可选显示名、图标、归档标记与额度配置保存在私有数据目录的 `accounts.local.json`，按完整账户名映射到 `name`、`icon`、`archived`、`limit` 等字段。没有该文件时自动显示账本账户名，不内置任何私人账户。账户别名由 `account add --alias` 写到私有 `docs/accounts.md`。
+
+## 使用
+
+下文的 `zledger` 指当前项目独立环境中的入口；可激活此环境，或使用上面的完整入口路径。CLI 以 `--help` 展示全部字段。
+
+| 命令 | 用途 |
 |---|---|
-| [roles/ROLE.md](roles/ROLE.md) | 泉府掌籍角色、口吻、权限与身份存续 |
-| [ledger-query](skills/ledger-query/SKILL.md) | 查余额、流水、账户、类别和 Dashboard |
-| [ledger-record](skills/ledger-record/SKILL.md) | 新增支出、收入、转账、换汇和平账 |
-| [ledger-maintenance](skills/ledger-maintenance/SKILL.md) | 按 txid 删除或修正旧账 |
-| [ledger-reimbursement](skills/ledger-reimbursement/SKILL.md) | 报销 case 与交易关联 |
-| [AGENTS.md](AGENTS.md) | 本包的维护规则 |
+| `balance` / `summary` | 余额与分币种净额 |
+| `transaction` / `transaction show --txid TXID` | 流水和源分录 |
+| `account` / `category` | 用户自己的账户与类别 |
+| `record expense/income/transfer/adjust/delete` | 新增或按 ID 删除交易 |
+| `reimbursement` | case、候选交易、关联及剩余金额 |
+| `dashboard --no-open` / `dashboard status` / `dashboard stop` | 本机看板启停 |
 
-`agents/openai.yaml` 只提供每项 skill 的名称、简介和默认提示词。ROLE.md 定义角色；SKILL.md 定义操作流程；实际财务仓库 AGENTS.md 定义工具契约。
+看板默认只绑定 `127.0.0.1:8080`，可用 `ZLEDGER_DASHBOARD_PORT` 配置其他本机端口。显示账户、流水、归档与报销事项；账务操作使用 CLI。金额按币种显示，不使用预设汇率合并净资产。看板汇总沿用浮点显示；正式写入使用 Decimal 并由 Beancount 校验，账本为事实来源。
 
-## 运行依赖
+修正简单旧账时确认完整新内容，删除旧交易并核验，再重记并回查新 txid。重记失败必须明确报告已删除的事实。跨币种 transfer 需要实际到账金额；报销 conversion 不计为第二笔回款。
 
-- Windows PowerShell。
-- 用户自行准备的 finances 仓库，以及兼容的 zledger。工具须支持 `balance`、`summary`、`transaction show`、`account`、`category`、`record` 和 `reimbursement`；使用前以本机 `--help` 核实支持情况。
-- finances 仓库中维护入口账本、账户与类别别名，以及项目 AGENTS.md。
-- 报销操作需要该工具所用的 SQLite 数据库。账本交易与报销 case 分别核对。
-
-不提供 zledger 的下载地址或安装器，因为本包不发布其代码。没有兼容工具时只能查阅指引，不执行真实记账。
-
-## 安装
+## 安装角色与 skills
 
 将本仓库克隆到自己选择的维护目录。四项 skill 可分别安装，也可一起安装；工作流相互转交时，需要对应 skill 可用。
 
@@ -62,38 +94,20 @@ foreach ($name in $skillNames) {
 }
 ```
 
-配置实际 finances 仓库位置，例如在当前 PowerShell 会话中设置：
-
-```powershell
-$env:FINANCES_REPO = (Resolve-Path '.\finances').Path
-Set-Location -LiteralPath $env:FINANCES_REPO
-zledger --help
-```
-
-该变量供 agent 定位仓库，不是 zledger 原生的账本路径参数。zledger 如需覆盖账本入口，使用其支持的 `FINANCES_LEDGER_PATH`。不要把真实个人路径提交到本包。
+角色和 skill 使用同一套私有数据位置配置。当前版本的 zledger 原生支持 `FINANCES_REPO` 与 `FINANCES_LEDGER_PATH`；使用默认数据目录时不用设置变量。不要把个人路径写入公开配置。
 
 角色文件需要显式接入本地全局或项目 AGENTS.md；只安装 skill 不会自动载入角色。把 [examples/AGENTS.fragment.md](examples/AGENTS.fragment.md) 中的路由片段按本地路径配置后，合并进现有 AGENTS.md，保留其他指引。
 
-## 账务流程
+## 验证与重新运行
 
-1. 核对必要字段，账户和类别使用唯一精确别名，币种取账户定义。
-2. 新增交易前查可能重复；字段或交易目标有歧义时澄清。
-3. 仅通过 zledger 写入，取得 txid；报销关联另取 case ID。
-4. 回查完整分录或 case，核验后才报告完成。
-5. 修正简单旧账时先确认目标与新内容，再删除、核验、重记、回查。重记失败须明确报告已删除的事实。
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
 
-账户结构、期初余额、数据库迁移和工具代码改动按角色权限先呈方案。禁止用虚假交易测试、直接编辑真实账本、以第二笔补救交易掩盖失败，或把 conversion 当成第二笔报销回款。
+测试只使用自动生成的临时空账本和合成数据，覆盖初始化、账户配置、交易读写、失败保留原数据、报销关联、API 与页面，以及独立安装后的 CLI。临时文件测试结束后删除，不接触用户现有 finances 数据。
 
-## 发布版整理范围
+## 维护
 
-- 将硬编码的个人路径改为项目配置；保留四项 skill 的操作、确认和验证规则。
-- 明确写前查重及输出异常后禁止盲目重试。
-- 角色身份退出规则与全局路由保持一致。
-- 将未随包提供的养老金刷新 skill 引用改为可选扩展说明。
-- 保留 agents/openai.yaml 原有用途，不新增自动执行功能。
+本仓库提供通用发行版。本机原有角色、skills、全局命令和真实 finances 项目不会因更新本仓库而自动替换。安装后的代码更新需在独立环境重新运行 `python -m pip install .`。
 
-本仓库是公开的可移植发行版。本机既有角色和 skills 不会因发布而自动替换。
-
-## 验证范围
-
-发布时检查四项 skill 的结构、相互引用、个人信息和敏感文件排除，并进行流程语义核对。未在真实账本上执行写入或删除测试；工具端的兼容性须由使用者针对已安装版本确认。
+MIT 许可证。

@@ -7,7 +7,7 @@
 
 - 个人记账、查账、平账、修旧账或报销事务，先读取本地 ledger-agent-skills/roles/ROLE.md，按泉府掌籍身份办理。
 - 查询用 $ledger-query；新增用 $ledger-record；修正或删除旧账用 $ledger-maintenance；报销 case 用 $ledger-reimbursement。
-- finances 仓库位置取用户配置或 FINANCES_REPO，操作前读取该仓库 AGENTS.md。
+- 调用本包独立 Python 环境中的 zledger。私有数据位置取 FINANCES_REPO / FINANCES_LEDGER_PATH 或平台默认目录；先读本包 AGENTS.md 及用户的本地数据指引。
 - 用户明确要求退出，或话题明显离开账务辖域后，恢复一般角色并告知。
 ```
 

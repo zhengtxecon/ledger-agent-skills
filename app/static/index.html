@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>个人账本</title>
+<style>
+body{font:16px system-ui,sans-serif;max-width:1100px;margin:36px auto;padding:0 20px;color:#26333b;background:#f6f7f8}nav{display:flex;gap:20px;flex-wrap:wrap}a{color:#286977}h1{font-size:28px}section{background:white;padding:22px;margin:20px 0;border-radius:10px;overflow:auto}table{border-collapse:collapse;width:100%}td,th{padding:10px;text-align:left;border-bottom:1px solid #e1e7eb}#status{color:#873b22}button{padding:8px 16px;cursor:pointer}
+</style>
+<h1>个人账本</h1><nav><a href="/">账户与余额</a><a href="/flow">最近流水</a><a href="/archive">归档账户</a><a href="/reimbursements">报销</a></nav>
+<p>数据来自本机私有账本。余额按币种分别显示。</p><button id="refresh">刷新</button><p id="status"></p><main id="content"></main>
+<script>
+const main=document.querySelector('#content'),status=document.querySelector('#status');
+async function api(url){const r=await fetch(url);if(!r.ok)throw Error('读取失败，请检查本机账本配置。');return r.json();}
+function section(title,rows,columns){const s=document.createElement('section'),h=document.createElement('h2');h.textContent=title;s.append(h);if(!rows.length){const p=document.createElement('p');p.textContent='暂无记录';s.append(p);}else{const t=document.createElement('table'),head=document.createElement('tr');for(const [label] of columns){const th=document.createElement('th');th.textContent=label;head.append(th);}t.append(head);for(const row of rows){const tr=document.createElement('tr');for(const [,key] of columns){const td=document.createElement('td');const value=row[key];td.textContent=value==null?'':typeof value==='object'?Object.entries(value).map(([k,v])=>k+' '+v).join(' / '):String(value);tr.append(td);}t.append(tr);}s.append(t);}main.append(s);}
+async function load(){status.textContent='';main.replaceChildren();try{const path=location.pathname;if(path==='/flow'){const d=await api('/api/transactions?limit=100');section('最近流水',Array.isArray(d)?d:[],[['日期','date'],['类型','type'],['类别','category'],['金额','amount'],['币种','currency'],['用途','narration']]);}else if(path==='/reimbursements'){const d=await api('/api/reimbursements');section('报销事项',(d.items||[]).map(x=>({...x,remaining:x.summary.remaining_base})),[['事项','title'],['对方','person_name'],['状态','status'],['剩余','remaining'],['币种','base_currency']]);}else{const d=await api(path==='/archive'?'/api/archive':'/api/accounts');for(const [group,rows] of Object.entries(d))section(group,rows,[['账户','name'],['币种','currency'],['余额','balance']]);if(!Object.keys(d).length)section('账户',[],[]);if(path!=='/archive'){const summary=await api('/api/summary');section('净额',Object.entries(summary.net).map(([currency,balance])=>({currency,balance})),[['币种','currency'],['净额','balance']]);}}}catch(e){status.textContent=e.message;}}
+document.querySelector('#refresh').onclick=load;load();
+</script></html>
