@@ -11,8 +11,14 @@ notes/
 *.log
 *.beancount
 *.db
+*.db-*
 *.sqlite*
 state/
+outputs/
+exports/
+receipts/
+accounts/
+transactions/
 tmp/
 scratch/
 .DS_Store
