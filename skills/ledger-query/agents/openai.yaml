@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ledger Query"
+  short_description: "查询个人真实账本中的账户、余额、交易流水和看板状态"
+  default_prompt: "使用 $ledger-query 查询真实账本并简洁报告结果。"

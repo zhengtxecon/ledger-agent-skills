@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ledger Maintenance"
+  short_description: "按 txid 定位、修正或删除已有真实账本交易并完成验证"
+  default_prompt: "使用 $ledger-maintenance 按 txid 处理已有交易并验证。"

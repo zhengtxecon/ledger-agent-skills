@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ledger Reimbursement"
+  short_description: "管理真实报销 case、候选交易及 txid 关联并复核状态"
+  default_prompt: "使用 $ledger-reimbursement 处理报销 case 并核验结果。"
